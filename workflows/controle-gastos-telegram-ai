@@ -1,0 +1,384 @@
+{
+  "name": "Controle de Gastos via Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "receive-telegram-message",
+        "options": {
+          "responseData": ""
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        2000
+      ],
+      "id": "71ba49cb-8efe-4cd5-a985-57d41412cb4f",
+      "name": "Webhook1",
+      "webhookId": "adb8abdb-3488-4eb4-a12e-133a3b767cab"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3e159d22-1e35-4ac6-b7c4-23dcd61b2c65",
+              "leftValue": "={{ $json.body.message.chat.id }}",
+              "rightValue": -4694224419,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        2000
+      ],
+      "id": "5d0c3797-fb51-47cc-94ff-55778f38a9a6",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        180,
+        2220
+      ],
+      "id": "9f31f7be-b394-4751-a2a6-db809d6333fd",
+      "name": "No Operation, do nothing2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea5c86e2-c78d-4c8c-8a56-6941636e1342",
+              "name": "createdAt",
+              "value": "={{ $('Webhook1').item.json.body.message.date }}",
+              "type": "string"
+            },
+            {
+              "id": "6ef1a8f4-7b6b-4d1b-b26b-de8f34572c22",
+              "name": "messageTxt",
+              "value": "={{ $('Webhook1').item.json.body.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        1900
+      ],
+      "id": "be61649c-1201-4483-89db-182636863309",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messageTxt }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um assistente de classificação financeira.\n\nSeu objetivo é analisar mensagens de texto simples enviadas por usuários no Telegram contendo descrições de gastos pessoais.\n\n**Seu trabalho é extrair esses três elementos da mensagem** e devolver um objeto JSON com a seguinte estrutura:\n\n{\n  \"titulo\": string,\n  \"categoria\": string,\n  \"valor\": number,\n  \"data\": string (formato DD-MM-YYYY HH:MM)\n}\n\n### Regras:\n- O campo `valor` deve ser convertido para número com ponto decimal como separador, se necessário (ex: \"18,50\" → 18.5).\n- O campo `data` deve conter a data e hora atual no formato `DD-MM-YYYY HH:MM`, com base no horário da execução da análise.\n- Se algum dos campos estiver ausente ou em formato inválido, retorne `null` para todos os campos, inclusive para `data`.\n- Não adicione nenhum texto fora do JSON.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        400,
+        1900
+      ],
+      "id": "4ec39ad8-1d7d-41f3-862f-0f408bac82c8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        400,
+        2100
+      ],
+      "id": "f801916a-89ff-4152-b55f-9a88eff03a58",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "k1CalL0Uz3pXCViN",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw",
+          "mode": "list",
+          "cachedResultName": "Controle Financeiro",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Maio",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Titulo": "={{ $json.titulo }}",
+            "Categoria": "={{ $json.categoria }}",
+            "Valor": "={{ $json.valor }}",
+            "Data": "={{ $json.data }}"
+          },
+          "matchingColumns": [
+            "Titulo"
+          ],
+          "schema": [
+            {
+              "id": "Titulo",
+              "displayName": "Titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Valor",
+              "displayName": "Valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        1820
+      ],
+      "id": "aa8bdc30-79ff-42eb-95db-be386a83613c",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kUDd5CZIXkxVRjK8",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "58486224-7a30-4415-a539-490babbd52d2",
+              "name": "titulo",
+              "value": "={{ $json.output.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "010de5c9-51d9-451e-83b8-a349d6c751c6",
+              "name": "categoria",
+              "value": "={{ $json.output.categoria }}",
+              "type": "string"
+            },
+            {
+              "id": "5ec05e5c-0f9b-4893-89e9-1d862083714b",
+              "name": "valor",
+              "value": "={{ $json.output.valor }}",
+              "type": "number"
+            },
+            {
+              "id": "bfc15371-525b-43a0-889a-ba206a7a9409",
+              "name": "data",
+              "value": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        820,
+        1900
+      ],
+      "id": "90757c5d-ef06-48b4-85fe-758090e60325",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"titulo\": \"\",\n  \"categoria\": \"\",\n  \"valor\": 2,\n  \"data\": \"\" \n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        580,
+        2120
+      ],
+      "id": "3033ef05-0461-4ac0-8ea2-7aff91caabdc",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8db41970-eee0-46e8-a6c7-96af87d9ec81",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e845bffa51e68eefd4dee880085c6f81596826002ca0d8c6bcf74febd7ceccb7"
+  },
+  "id": "w1pQkoECzdrsyRmL",
+  "tags": [
+    {
+      "createdAt": "2025-05-08T02:48:49.880Z",
+      "updatedAt": "2025-05-08T02:48:49.880Z",
+      "id": "9vAHNARI4StGWmii",
+      "name": "NoCode StartUp"
+    }
+  ]
+}
