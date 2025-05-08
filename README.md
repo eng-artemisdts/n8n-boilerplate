@@ -6,6 +6,8 @@ Este repositório foi criado pela **Artemis** com o objetivo de fornecer uma bas
 
 Este boilerplate contém uma configuração mínima e funcional do n8n utilizando Docker Compose. Ele permite iniciar rapidamente projetos que utilizam automações, integrações e workflows personalizados.
 
+Além disso, acompanha uma pasta `workflows/` contendo as exportações de todos os workflows já criados pela equipe da **Artemis**, servindo como referência e ponto de partida para novos projetos.
+
 ## 🚀 Como usar
 
 ### Pré-requisitos
@@ -41,6 +43,7 @@ Este boilerplate contém uma configuração mínima e funcional do n8n utilizand
 ```
 n8n-boilerplate/
 ├── docker-compose.yml   # Configuração do serviço n8n
+├── workflows/            # Workflows exportados pela Artemis
 └── README.md             # Documentação do projeto
 ```
 
