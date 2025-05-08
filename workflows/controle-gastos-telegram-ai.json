@@ -78,6 +78,12 @@
               "name": "messageTxt",
               "value": "={{ $('Webhook1').item.json.body.message.text }}",
               "type": "string"
+            },
+            {
+              "id": "24f6b018-b9c8-43da-82cc-9cd7892ac169",
+              "name": "chatId",
+              "value": "={{ $json.body.message.chat.id }}",
+              "type": "number"
             }
           ]
         },
@@ -98,7 +104,7 @@
         "text": "={{ $json.messageTxt }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "Você é um assistente de classificação financeira.\n\nSeu objetivo é analisar mensagens de texto simples enviadas por usuários no Telegram contendo descrições de gastos pessoais.\n\n**Seu trabalho é extrair esses três elementos da mensagem** e devolver um objeto JSON com a seguinte estrutura:\n\n{\n  \"titulo\": string,\n  \"categoria\": string,\n  \"valor\": number,\n  \"data\": string (formato DD-MM-YYYY HH:MM)\n}\n\n### Regras:\n- O campo `valor` deve ser convertido para número com ponto decimal como separador, se necessário (ex: \"18,50\" → 18.5).\n- O campo `data` deve conter a data e hora atual no formato `DD-MM-YYYY HH:MM`, com base no horário da execução da análise.\n- Se algum dos campos estiver ausente ou em formato inválido, retorne `null` para todos os campos, inclusive para `data`.\n- Não adicione nenhum texto fora do JSON.\n"
+          "systemMessage": "Você é um assistente de classificação financeira.\n\nSeu objetivo é analisar mensagens de texto simples enviadas por usuários no Telegram contendo descrições de gastos pessoais.\n\n**Seu trabalho é extrair os seguintes elementos da mensagem** e devolver um objeto JSON com a seguinte estrutura:\n\n{\n  \"titulo\": string,\n  \"categoria\": string,\n  \"valor\": number,\n  \"data\": string (formato DD-MM-YYYY HH:MM)\n}\n\n### Regras:\n- O campo `valor` deve ser convertido para número com ponto decimal como separador, se necessário (ex: \"18,50\" → 18.5).\n- O campo `data` deve conter a data e hora atual no formato `DD-MM-YYYY HH:MM`, com base no horário da execução da análise.\n- A `categoria` deve sempre ser uma das opções listadas abaixo.\n- Se a mensagem não contiver informações suficientes ou válidas, retorne `null` para todos os campos, inclusive para `id` e `data`.\n- Não adicione nenhum texto fora do JSON.\n\n### Categorias possíveis:\nUse sempre uma dessas categorias como base:\n\n- Alimentação\n- Transporte\n- Saúde\n- Moradia\n- Lazer\n- Compras\n- Educação\n- Assinaturas\n- Investimentos\n- Viagem\n- Animais\n- Cuidados pessoais\n- Presentes\n- Doações\n- Impostos\n- Taxas bancárias\n- Serviços domésticos\n- Manutenção de veículo\n- Combustível\n- Supermercado\n- Farmácia\n- Roupas\n- Bebidas\n- Delivery\n- Internet\n- Luz\n- Água\n- Gás\n- Celular\n- Seguro\n- Academia\n- Estacionamento\n- Multas\n- Cartão de crédito\n- Outros"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -131,6 +137,41 @@
     },
     {
       "parameters": {
+        "jsonSchemaExample": "{\n  \"titulo\": \"\",\n  \"categoria\": \"\",\n  \"valor\": 2,\n  \"data\": \"\" \n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        580,
+        2120
+      ],
+      "id": "3033ef05-0461-4ac0-8ea2-7aff91caabdc",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=Gasto adicionado com sucesso! Valor Total Gasto no Mês: {{ $json.somaTotal }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1480,
+        1900
+      ],
+      "id": "cc1fff82-5756-49cc-97e4-978f1d4312b1",
+      "name": "Envia Resposta",
+      "webhookId": "f936244c-7b26-4d5a-9fa9-bfacc102c543",
+      "credentials": {
+        "telegramApi": {
+          "id": "vwyaTrCTI2YuCcWf",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "operation": "appendOrUpdate",
         "documentId": {
           "__rl": true,
@@ -149,10 +190,10 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Titulo": "={{ $json.titulo }}",
-            "Categoria": "={{ $json.categoria }}",
-            "Valor": "={{ $json.valor }}",
-            "Data": "={{ $json.data }}"
+            "Titulo": "={{ $json.output.titulo }}",
+            "Categoria": "={{ $json.output.categoria }}",
+            "Valor": "={{ $json.output.valor }}",
+            "Data": "={{ $json.output.data }}"
           },
           "matchingColumns": [
             "Titulo"
@@ -204,11 +245,66 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1120,
-        1820
+        780,
+        1900
       ],
       "id": "aa8bdc30-79ff-42eb-95db-be386a83613c",
-      "name": "Google Sheets",
+      "name": "Escreve Nova Linha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kUDd5CZIXkxVRjK8",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        1640
+      ],
+      "id": "67ef4c1f-0824-48e6-b934-bc3b9295daf7",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        460,
+        2320
+      ],
+      "id": "0855b24e-fae9-4838-8e40-a0dc511ba4bf",
+      "name": "Calculator1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw",
+          "mode": "list",
+          "cachedResultName": "Controle Financeiro",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Maio",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16x8ewHt6ehIfbRnMZ1s7X3bHY8gNOwPxqscZzmBCmyw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1000,
+        1900
+      ],
+      "id": "a270adde-cc2c-489b-8539-304b662af3c3",
+      "name": "Google Sheets Busca",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "kUDd5CZIXkxVRjK8",
@@ -218,57 +314,16 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "58486224-7a30-4415-a539-490babbd52d2",
-              "name": "titulo",
-              "value": "={{ $json.output.titulo }}",
-              "type": "string"
-            },
-            {
-              "id": "010de5c9-51d9-451e-83b8-a349d6c751c6",
-              "name": "categoria",
-              "value": "={{ $json.output.categoria }}",
-              "type": "string"
-            },
-            {
-              "id": "5ec05e5c-0f9b-4893-89e9-1d862083714b",
-              "name": "valor",
-              "value": "={{ $json.output.valor }}",
-              "type": "number"
-            },
-            {
-              "id": "bfc15371-525b-43a0-889a-ba206a7a9409",
-              "name": "data",
-              "value": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "const somaTotal = $input.all().reduce((total, item) => total + item.json.Valor, 0);\n\nreturn [\n  {\n    json: {\n      somaTotal: somaTotal.toLocaleString('pt-BR', {\n        style: 'currency',\n        currency: 'BRL',\n      }),\n      chatId: $('Webhook1').first().json.body.message.chat.id\n    },\n  },\n];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        820,
+        1220,
         1900
       ],
-      "id": "90757c5d-ef06-48b4-85fe-758090e60325",
-      "name": "Edit Fields1"
-    },
-    {
-      "parameters": {
-        "jsonSchemaExample": "{\n  \"titulo\": \"\",\n  \"categoria\": \"\",\n  \"valor\": 2,\n  \"data\": \"\" \n}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.2,
-      "position": [
-        580,
-        2120
-      ],
-      "id": "3033ef05-0461-4ac0-8ea2-7aff91caabdc",
-      "name": "Structured Output Parser"
+      "id": "b90802c5-d37c-45ba-a8d9-412728c6ef87",
+      "name": "Code"
     }
   ],
   "pinData": {},
@@ -328,23 +383,7 @@
       "main": [
         [
           {
-            "node": "Edit Fields1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets": {
-      "main": [
-        []
-      ]
-    },
-    "Edit Fields1": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets",
+            "node": "Escreve Nova Linha",
             "type": "main",
             "index": 0
           }
@@ -361,13 +400,62 @@
           }
         ]
       ]
+    },
+    "Envia Resposta": {
+      "main": [
+        []
+      ]
+    },
+    "Escreve Nova Linha": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Busca": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Envia Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "8db41970-eee0-46e8-a6c7-96af87d9ec81",
+  "versionId": "8a36ac81-4403-4d53-9552-e264f38da3a9",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e845bffa51e68eefd4dee880085c6f81596826002ca0d8c6bcf74febd7ceccb7"
